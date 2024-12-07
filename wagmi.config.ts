@@ -1,9 +1,9 @@
 import { getDefaultConfig } from '@rainbow-me/rainbowkit';
-import { mainnet, polygonZkEvm, polygonZkEvmCardona, sepolia } from 'wagmi/chains';
+import { base, baseSepolia, mainnet, polygonZkEvmCardona, sepolia } from 'wagmi/chains';
 
 export const config = getDefaultConfig({
-  appName: 'Your App Name',
-  projectId: 'faa32d954c31418d4de933e54080513d', // Get from WalletConnect Cloud
-  chains: [mainnet, sepolia, polygonZkEvmCardona],
+  appName: 'AadharDomain',
+  projectId: process.env.NEXT_PUBLIC_APP_ID || '', // Get from WalletConnect Cloud
+  chains: [mainnet, sepolia, base, baseSepolia],
   ssr: true, // Enable server-side rendering
 });

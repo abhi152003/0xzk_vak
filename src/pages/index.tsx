@@ -1,6 +1,5 @@
 import ConnectWalletWithENS from "@/components/ConnectWalletWithENS";
 import {
-  AnonAadhaarProof,
   LogInWithAnonAadhaar,
   useAnonAadhaar,
   useProver,
@@ -29,7 +28,6 @@ export default function Home({ setUseTestAadhaar, useTestAadhaar }: HomeProps) {
     revealState: false,
     revealPinCode: false
   });
-  const [domainName, setDomainName] = useState("");
   const [verificationMessage, setVerificationMessage] = useState<string | null>(null);
 
   useEffect(() => {
@@ -63,8 +61,217 @@ export default function Home({ setUseTestAadhaar, useTestAadhaar }: HomeProps) {
     }
   };
 
-  const VERIFIER_ADDRESS = "0xd59C20F74056080e5ac4B0f55bBd77ff75E7a16e";
-  const VERIFIER_ABI = [{ "inputs": [{ "internalType": "address", "name": "_verifier", "type": "address" }, { "internalType": "uint256", "name": "_pubkeyHash", "type": "uint256" }], "stateMutability": "nonpayable", "type": "constructor" }, { "inputs": [], "name": "storedPublicKeyHash", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" }, { "inputs": [], "name": "verifier", "outputs": [{ "internalType": "address", "name": "", "type": "address" }], "stateMutability": "view", "type": "function" }, { "inputs": [{ "internalType": "uint256", "name": "nullifierSeed", "type": "uint256" }, { "internalType": "uint256", "name": "nullifier", "type": "uint256" }, { "internalType": "uint256", "name": "timestamp", "type": "uint256" }, { "internalType": "uint256", "name": "signal", "type": "uint256" }, { "internalType": "uint256[4]", "name": "revealArray", "type": "uint256[4]" }, { "internalType": "uint256[8]", "name": "groth16Proof", "type": "uint256[8]" }], "name": "verifyAnonAadhaarProof", "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }], "stateMutability": "view", "type": "function" }];
+  const VERIFIER_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || " ";
+  const VERIFIER_ABI =[
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_verifier",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_pubkeyHash",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "user",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "bool",
+          "name": "verified",
+          "type": "bool"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "timestamp",
+          "type": "uint256"
+        }
+      ],
+      "name": "VerificationStored",
+      "type": "event"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "nullifierSeed",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "nullifier",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "timestamp",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "signal",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256[4]",
+          "name": "revealArray",
+          "type": "uint256[4]"
+        },
+        {
+          "internalType": "uint256[8]",
+          "name": "groth16Proof",
+          "type": "uint256[8]"
+        }
+      ],
+      "name": "verifyAndStoreProof",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "success",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "storedPublicKeyHash",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "name": "userData",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "age",
+          "type": "bool"
+        },
+        {
+          "internalType": "bool",
+          "name": "gender",
+          "type": "bool"
+        },
+        {
+          "internalType": "uint256",
+          "name": "pincode",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "state",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "name": "verifiedAddresses",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "verifier",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "nullifierSeed",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "nullifier",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "timestamp",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "signal",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256[4]",
+          "name": "revealArray",
+          "type": "uint256[4]"
+        },
+        {
+          "internalType": "uint256[8]",
+          "name": "groth16Proof",
+          "type": "uint256[8]"
+        }
+      ],
+      "name": "verifyAnonAadhaarProof",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ]
 
   const handleVerifyProof = async () => {
     if (anonAadhaar.status !== "logged-in") {
@@ -106,33 +313,32 @@ export default function Home({ setUseTestAadhaar, useTestAadhaar }: HomeProps) {
 
       const verifierContract = new ethers.Contract(VERIFIER_ADDRESS, VERIFIER_ABI, signer);
 
+      // console.log("input: ", [
+      //   proof.nullifierSeed,
+      //   proof.nullifier,
+      //   proof.timestamp,
+      //   1,
+      //   revealArray,
+      //   groth16Proof
+      // ])
 
-      console.log("input: ", [
-        proof.nullifierSeed,
-        proof.nullifier,
-        proof.timestamp,
-        1,
-        revealArray,
-        groth16Proof
-      ])
       // Call verifyAnonAadhaarProof instead of verifyProof
-      const isValid = await verifierContract.verifyAnonAadhaarProof(
+      const tx = await verifierContract.verifyAndStoreProof(
         proof.nullifierSeed,
         proof.nullifier,
         proof.timestamp,
         1,
         revealArray,
-        groth16Proof
+        groth16Proof,
+        { gasLimit: 1000000 }
       );
 
-      console.log(isValid)
+      const receipt = await tx.wait();
+      console.log("Transaction receipt:", receipt);
 
-      if (isValid) {
-        console.log("Proof verified successfully");
+      if (receipt.status === 1) {
         setVerificationMessage("✅ Proof verified successfully!");
-        // Proceed with domain registration
       } else {
-        console.error("Proof verification failed");
         setVerificationMessage("❌ Proof verification failed.");
       }
     } catch (error) {
