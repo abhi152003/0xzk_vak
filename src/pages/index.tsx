@@ -1,3 +1,4 @@
+import ConnectWalletWithENS from "@/components/ConnectWalletWithENS";
 import {
   AnonAadhaarProof,
   LogInWithAnonAadhaar,
@@ -29,6 +30,7 @@ export default function Home({ setUseTestAadhaar, useTestAadhaar }: HomeProps) {
     revealPinCode: false
   });
   const [domainName, setDomainName] = useState("");
+  const [verificationMessage, setVerificationMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (anonAadhaar.status === "logged-in") {
@@ -61,11 +63,10 @@ export default function Home({ setUseTestAadhaar, useTestAadhaar }: HomeProps) {
     }
   };
 
-  const VERIFIER_ADDRESS = "0x6bE8Cec7a06BA19c39ef328e8c8940cEfeF7E281";
+  const VERIFIER_ADDRESS = "0xd59C20F74056080e5ac4B0f55bBd77ff75E7a16e";
   const VERIFIER_ABI = [{ "inputs": [{ "internalType": "address", "name": "_verifier", "type": "address" }, { "internalType": "uint256", "name": "_pubkeyHash", "type": "uint256" }], "stateMutability": "nonpayable", "type": "constructor" }, { "inputs": [], "name": "storedPublicKeyHash", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" }, { "inputs": [], "name": "verifier", "outputs": [{ "internalType": "address", "name": "", "type": "address" }], "stateMutability": "view", "type": "function" }, { "inputs": [{ "internalType": "uint256", "name": "nullifierSeed", "type": "uint256" }, { "internalType": "uint256", "name": "nullifier", "type": "uint256" }, { "internalType": "uint256", "name": "timestamp", "type": "uint256" }, { "internalType": "uint256", "name": "signal", "type": "uint256" }, { "internalType": "uint256[4]", "name": "revealArray", "type": "uint256[4]" }, { "internalType": "uint256[8]", "name": "groth16Proof", "type": "uint256[8]" }], "name": "verifyAnonAadhaarProof", "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }], "stateMutability": "view", "type": "function" }];
 
-
-  const handleDomainRegistration = async () => {
+  const handleVerifyProof = async () => {
     if (anonAadhaar.status !== "logged-in") {
       alert("Please verify your Aadhar first!");
       return;
@@ -76,28 +77,26 @@ export default function Home({ setUseTestAadhaar, useTestAadhaar }: HomeProps) {
       return;
     }
 
-    console.log(latestProof)
-
-    const { proof, claim } = latestProof;
+    const { proof } = latestProof;
 
     // Format the groth16 proof array
     const groth16Proof = [
       proof.groth16Proof.pi_a[0],
       proof.groth16Proof.pi_a[1],
-      proof.groth16Proof.pi_b[0][0],
       proof.groth16Proof.pi_b[0][1],
-      proof.groth16Proof.pi_b[1][0],
+      proof.groth16Proof.pi_b[0][0],
       proof.groth16Proof.pi_b[1][1],
+      proof.groth16Proof.pi_b[1][0],
       proof.groth16Proof.pi_c[0],
       proof.groth16Proof.pi_c[1]
     ];
 
     // Format reveal array (0 for not revealed, 1 for revealed)
     const revealArray = [
-      claim.ageAbove18 ? 1 : 0,
-      claim.gender ? 1 : 0,
-      claim.pincode ? 1 : 0,
-      claim.state ? 1 : 0
+      proof.ageAbove18,
+      proof.gender,
+      proof.pincode,
+      proof.state
     ];
 
 
@@ -107,14 +106,21 @@ export default function Home({ setUseTestAadhaar, useTestAadhaar }: HomeProps) {
 
       const verifierContract = new ethers.Contract(VERIFIER_ADDRESS, VERIFIER_ABI, signer);
 
-      console.log(proof)
 
+      console.log("input: ", [
+        proof.nullifierSeed,
+        proof.nullifier,
+        proof.timestamp,
+        1,
+        revealArray,
+        groth16Proof
+      ])
       // Call verifyAnonAadhaarProof instead of verifyProof
       const isValid = await verifierContract.verifyAnonAadhaarProof(
         proof.nullifierSeed,
         proof.nullifier,
         proof.timestamp,
-        proof.signalHash,
+        1,
         revealArray,
         groth16Proof
       );
@@ -123,29 +129,32 @@ export default function Home({ setUseTestAadhaar, useTestAadhaar }: HomeProps) {
 
       if (isValid) {
         console.log("Proof verified successfully");
+        setVerificationMessage("✅ Proof verified successfully!");
         // Proceed with domain registration
       } else {
         console.error("Proof verification failed");
+        setVerificationMessage("❌ Proof verification failed.");
       }
     } catch (error) {
       console.error("Error verifying proof:", error);
+      setVerificationMessage("❌ An error occurred during verification.");
     }
   };
 
   return (
     <div className="min-h-screen bg-white px-4 py-8">
       {/* Hero Section */}
-      <header className="text-center mb-16 pt-8">
+      <header className="text-center mb-12 pt-8">
         <h1 className="text-5xl font-bold mb-4 text-[#00008B]">
           AadhaarDomain
         </h1>
         <p className="text-xl text-[#1E4B9C] mb-6">
-          Get your verified .aadhaar.base.eth domain powered by Anon Aadhaar
+          Connect your ENS name with Aadhaar verification powered by Anon Aadhaar
         </p>
         <div className="max-w-2xl mx-auto text-[#666666] space-y-4">
           <p>
-            AadharDomain enables Indian citizens to claim their digital identity on Base
-            while maintaining privacy through zero-knowledge proofs.
+            AadhaarDomain enables Indian citizens to link their digital identity
+            with their ENS name while maintaining privacy through zero-knowledge proofs.
           </p>
           <div className="flex justify-center gap-6 text-sm">
             <div className="flex items-center gap-2">
@@ -164,17 +173,23 @@ export default function Home({ setUseTestAadhaar, useTestAadhaar }: HomeProps) {
         </div>
       </header>
 
-      <main className="flex flex-col items-center gap-8">
-        {/* Main Card */}
-        <div className="bg-white rounded-2xl max-w-screen-sm mx-auto p-8 border border-[#1E4B9C] shadow-xl">
-          <h2 className="font-semibold text-xl mb-6 text-center text-[#00008B]">
-            Verify & Register Your Domain
+      {/* Main Content - Restructured for better spacing */}
+      <main className="flex flex-col items-center gap-6 max-w-screen-sm mx-auto">
+        {/* Connect Wallet - Centered */}
+        <div className="w-full flex justify-center mb-4">
+          <ConnectWalletWithENS />
+        </div>
+
+        {/* Main Card - Adjusted padding and width */}
+        <div className="bg-white rounded-2xl w-full p-6 border border-[#1E4B9C] shadow-xl">
+          <h2 className="font-semibold text-xl mb-4 text-center text-[#00008B]">
+            Connect ENS Name with Aadhaar Verification
           </h2>
 
-          {/* Proof Selection Form */}
-          <div className="w-full max-w-md mx-auto mb-8">
-            <h3 className="font-semibold mb-4 text-[#1E4B9C]">Choose Verification Details:</h3>
-            <div className="space-y-3">
+          {/* Proof Selection Form - Adjusted spacing */}
+          <div className="mb-6">
+            <h3 className="font-semibold mb-3 text-[#1E4B9C]">Choose Verification Details:</h3>
+            <div className="grid grid-cols-2 gap-3">
               {Object.keys(selectedFields).map((field) => (
                 <label key={field} className="flex items-center space-x-2 text-[#666666]">
                   <input
@@ -193,7 +208,7 @@ export default function Home({ setUseTestAadhaar, useTestAadhaar }: HomeProps) {
           </div>
 
           {/* Aadhar Verification Button */}
-          <div className="flex justify-center mb-8">
+          <div className="flex justify-center mb-6">
             <LogInWithAnonAadhaar
               nullifierSeed={1234}
               fieldsToReveal={Object.entries(selectedFields)
@@ -202,31 +217,8 @@ export default function Home({ setUseTestAadhaar, useTestAadhaar }: HomeProps) {
             />
           </div>
 
-          {/* Domain Registration Form */}
-          {anonAadhaar.status === "logged-in" && (
-            <div className="w-full max-w-md mx-auto space-y-4">
-              <h3 className="font-semibold text-[#1E4B9C]">Register Your Domain</h3>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={domainName}
-                  onChange={(e) => setDomainName(e.target.value)}
-                  placeholder="Enter your desired domain name"
-                  className="flex-1 rounded-md border border-[#1E4B9C] px-3 py-2 text-[#666666] placeholder-gray-400"
-                />
-                <span className="py-2 text-[#666666]">.aadhaar.base.eth</span>
-              </div>
-              <button
-                onClick={handleDomainRegistration}
-                className="w-full rounded-md bg-[#1E4B9C] px-4 py-2 text-white hover:bg-[#00008B] transition-colors"
-              >
-                Register Domain
-              </button>
-            </div>
-          )}
-
           {/* Test/Real Mode Switch */}
-          <div className="mt-8 text-center">
+          <div className="text-center">
             <p className="text-sm text-[#666666] mb-2">
               Currently using: <strong>{useTestAadhaar ? "Test" : "Real"}</strong> Aadhaar mode
             </p>
@@ -242,10 +234,19 @@ export default function Home({ setUseTestAadhaar, useTestAadhaar }: HomeProps) {
 
         {/* Proof Display Section */}
         {anonAadhaar.status === "logged-in" && (
-          <div className="bg-white rounded-2xl max-w-screen-sm mx-auto p-8 border border-[#1E4B9C]">
+          <div className="bg-white rounded-2xl w-full p-6 border border-[#1E4B9C]">
             <p className="text-[#1E4B9C] text-center mb-4">✅ Aadhar Proof Generated</p>
-            {latestProof && (
-              <AnonAadhaarProof code={JSON.stringify(latestProof, null, 2)} />
+            <div className="flex justify-center">
+              <button
+                onClick={handleVerifyProof}
+                type="button"
+                className="rounded bg-[#1E4B9C] px-3 py-1.5 text-sm font-semibold text-white hover:bg-[#00008B] transition-colors"
+              >
+                Verify Proof
+              </button>
+            </div>
+            {verificationMessage && (
+              <p className="text-center mt-4 text-lg text-[#1E4B9C]">{verificationMessage}</p>
             )}
           </div>
         )}
